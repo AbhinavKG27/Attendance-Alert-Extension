@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "Attendance Alert",
+  "version": "1.0",
+  "description": "Get instant mobile alerts for attendance popups.",
+
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+
+  "action": {
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+
+  "permissions": ["notifications", "activeTab", "scripting"],
+  "host_permissions": ["https://app.kodnest.com/*"],
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["https://app.kodnest.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

@@ -19,7 +19,7 @@
   },
 
   "permissions": ["notifications", "activeTab", "scripting"],
-  "host_permissions": ["https://app.kodnest.com/*"],
+  "host_permissions": ["Website-on-which-to-monitor"],
 
   "background": {
     "service_worker": "background.js"
@@ -27,7 +27,7 @@
 
   "content_scripts": [
     {
-      "matches": ["https://app.kodnest.com/*"],
+      "matches": ["Website-on-which-to-monitor"],
       "js": ["content.js"],
       "run_at": "document_idle"
     }

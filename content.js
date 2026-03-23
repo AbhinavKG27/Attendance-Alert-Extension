@@ -1,5 +1,3 @@
-importScripts("config.js", "sharedConfig.js");
-
 let lastUpdateId = 0;
 
 // Handle alerts from content.js

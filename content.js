@@ -1,77 +1,111 @@
-let lastUpdateId = 0;
+console.log("🎯 Detector Running");
 
-// Handle alerts from content.js
-chrome.runtime.onMessage.addListener((request) => {
-  if (request.type === "ATTENDANCE_DETECTED") {
+let alertTriggered = false;
 
-    chrome.notifications.create({
-      type: "basic",
-      iconUrl: "icons/icon128.png",
-      title: "🚨 Attendance Alert",
-      message: request.text,
-      priority: 2
-    });
+const KEYWORDS = SHARED_CONFIG.KEYWORDS;
 
-    fetch(`https://api.telegram.org/bot${CONFIG.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        chat_id: CONFIG.CHAT_ID,
-        text: "🚨 Attendance detected & handled!"
-      })
-    });
+// visibility check
+function isVisible(el) {
+  if (!el) return false;
+
+  const rect = el.getBoundingClientRect();
+  const style = window.getComputedStyle(el);
+
+  return (
+    style.display !== "none" &&
+    style.visibility !== "hidden" &&
+    rect.width > 0 &&
+    rect.height > 0
+  );
+}
+
+// keyword match
+function containsAttendance(text) {
+  if (!text) return false;
+  const lower = text.toLowerCase();
+  return KEYWORDS.some(k => lower.includes(k));
+}
+
+// auto click
+function autoClickAttendance(root) {
+  const elements = root.querySelectorAll("button, div, span, a");
+
+  for (const el of elements) {
+    if (!isVisible(el)) continue;
+
+    const text = el.innerText || "";
+
+    if (containsAttendance(text)) {
+      console.log("🤖 Clicking:", text);
+      el.click();
+      return true;
+    }
+  }
+
+  return false;
+}
+
+// alert
+function sendAlert(text) {
+  if (alertTriggered) return;
+
+  alertTriggered = true;
+
+  chrome.runtime.sendMessage({
+    type: "ATTENDANCE_DETECTED",
+    text: "Attendance auto-clicked!"
+  });
+
+  setTimeout(() => {
+    alertTriggered = false;
+  }, 45000);
+}
+
+// scan
+function scanNode(node) {
+  if (!node || node.nodeType !== 1) return;
+
+  const elements = [node, ...node.querySelectorAll("div, button, span")];
+
+  for (const el of elements) {
+    if (!isVisible(el)) continue;
+
+    const text = el.innerText || "";
+
+    if (containsAttendance(text)) {
+      if (autoClickAttendance(document.body)) {
+        sendAlert(text);
+      }
+      return true;
+    }
+  }
+
+  return false;
+}
+
+// observe
+const observer = new MutationObserver((mutations) => {
+  for (const mutation of mutations) {
+    for (const node of mutation.addedNodes) {
+      if (scanNode(node)) return;
+    }
   }
 });
 
-// 🔁 Telegram polling for remote commands
-setInterval(async () => {
-  try {
-    const res = await fetch(
-      `https://api.telegram.org/bot${CONFIG.TELEGRAM_BOT_TOKEN}/getUpdates`
-    );
-    const data = await res.json();
+observer.observe(document.body, {
+  childList: true,
+  subtree: true
+});
 
-    if (!data.result) return;
+// initial scan
+setTimeout(() => {
+  scanNode(document.body);
+}, 2000);
 
-    for (const update of data.result) {
-      if (update.update_id <= lastUpdateId) continue;
-
-      lastUpdateId = update.update_id;
-
-      const msg = update.message?.text?.toLowerCase();
-      if (!msg) continue;
-
-      console.log("📩 Command:", msg);
-
-      if (msg.includes("mark")) {
-        triggerAttendanceClick();
-      }
-    }
-
-  } catch (err) {
-    console.error("Polling error:", err);
+// remote command
+chrome.runtime.onMessage.addListener((request) => {
+  if (request.type === "FORCE_CLICK_ATTENDANCE") {
+    console.log("📱 Remote click triggered");
+    autoClickAttendance(document.body);
   }
-}, 5000);
-
-// Send click command to tab
-function triggerAttendanceClick() {
-  chrome.tabs.query({}, (tabs) => {
-    for (const tab of tabs) {
-      if (tab.url && tab.url.includes(SHARED_CONFIG.TARGET_SITE)) {
-        chrome.tabs.sendMessage(tab.id, {
-          type: "FORCE_CLICK_ATTENDANCE"
-        });
-      }
-    }
-  });
-
-  // confirmation
-  fetch(`https://api.telegram.org/bot${CONFIG.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      chat_id: CONFIG.CHAT_ID,
-      text: "✅ Attendance command executed"
-    })
-  });
-}
+});

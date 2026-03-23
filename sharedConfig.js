@@ -1,5 +1,5 @@
 const SHARED_CONFIG = {
-  TARGET_SITE: "example-webpage.com",
+  TARGET_SITE: "example--platform.com",
 
   KEYWORDS: [
     "attendance",

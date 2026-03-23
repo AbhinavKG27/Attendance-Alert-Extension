@@ -1,112 +1,194 @@
-# 📋 Attendance Alert Extension
+# 🎯 Smart Popup Automation Extension (Chrome)
 
-A Chrome browser extension that monitors attendance pop-ups on your college/university portal and instantly sends you a Telegram notification — so you never miss an attendance alert, even when you're away from the tab.
-
----
-
-## ✨ Features
-
-- 🔍 Automatically detects attendance pop-ups on your portal
-- 📲 Sends real-time alerts to your Telegram account or group
-- 🧩 Lightweight and runs silently in the background
-- ⚡ Works as a Chrome Manifest V3 extension
+A powerful Chrome Extension that detects dynamic popup events on web applications and performs automated actions such as clicking buttons and sending real-time mobile alerts.
 
 ---
 
-## 🗂️ Project Structure
+## 🚀 Features
+
+* 🔍 Real-time popup detection using DOM MutationObserver
+* 🤖 Automatic action (e.g., button click) when target popup appears
+* 📱 Instant mobile notifications via Telegram Bot
+* 📡 Remote control: trigger actions from your phone
+* 🛡️ Anti-spam protection with cooldown system
+* ⚙️ Config-driven architecture (easy to customize)
+* 🌐 Works across multiple websites (configurable)
+
+---
+
+## 🧠 How It Works
+
+1. The extension monitors the webpage DOM in real-time
+2. When a popup or UI element containing specific keywords appears
+3. It detects visible elements and identifies actionable buttons
+4. Automatically performs the action (like clicking a button)
+5. Sends an alert to your mobile via Telegram
+
+Additionally:
+
+* You can send commands (e.g., `mark`) from your phone
+* The extension will execute actions remotely on your browser
+
+---
+
+## 🛠️ Tech Stack
+
+* JavaScript (Vanilla)
+* Chrome Extension (Manifest V3)
+* DOM MutationObserver API
+* Telegram Bot API
+* HTML & CSS (UI)
+
+---
+
+## 📁 Project Structure
 
 ```
-Attendance-Alert-Extension/
-├── icons/              # Extension icons
-├── background.js       # Service worker — handles Telegram API calls
-├── content.js          # Injected into the page to detect attendance pop-ups
-├── manifest.json       # Chrome Extension manifest (MV3)
-├── popup.html          # Extension popup UI
-├── popup.js            # Popup logic
-├── styles.css          # Popup styling
-├── config.js           # ⚠️ YOU MUST CREATE THIS (see setup below)
+attendance-alert/
+├── manifest.json
+├── background.js
+├── content.js
+├── sharedConfig.js       # Public configuration (site, keywords)
+├── config.js             # Private credentials (ignored)
+├── config.example.js     # Template for setup
+├── popup.html
+├── popup.js
+├── icons/
 └── .gitignore
 ```
 
 ---
 
-## 🚀 Setup & Installation
+## ⚙️ Setup Instructions
 
-### 1. Clone the Repository
+### 1️⃣ Clone the Repository
 
 ```bash
-git clone https://github.com/AbhinavKG27/Attendance-Alert-Extension.git
-cd Attendance-Alert-Extension
+git clone https://github.com/YOUR_USERNAME/attendance-alert.git
+cd attendance-alert
 ```
 
-### 2. Create a Telegram Bot
+---
 
-1. Open Telegram and search for **@BotFather**
-2. Send `/newbot` and follow the prompts
-3. Copy the **Bot Token** you receive
-4. Start a chat with your bot, then visit:
-   ```
-   https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates
-   ```
-5. Send a message to your bot and refresh the URL — copy your **Chat ID** from the response
+### 2️⃣ Add Your Telegram Credentials
 
-### 3. Create `config.js` ⚠️
+Create a file:
 
-In the root of the project, create a file called **`config.js`** and add the following:
+```
+config.js
+```
 
-```js
+Paste:
+
+```javascript
 const CONFIG = {
-  TELEGRAM_BOT_TOKEN: "YOUR_REAL_TOKEN_HERE",
+  TELEGRAM_BOT_TOKEN: "YOUR_BOT_TOKEN",
   CHAT_ID: "YOUR_CHAT_ID"
 };
 ```
 
-> **⚠️ Important:** Never commit `config.js` to a public repository. It is already listed in `.gitignore` to keep your credentials safe.
-
-### 4. Load the Extension in Chrome
-
-1. Open Chrome and go to `chrome://extensions/`
-2. Enable **Developer Mode** (toggle in the top-right corner)
-3. Click **"Load unpacked"**
-4. Select the `Attendance-Alert-Extension` folder
-5. The extension is now active! 🎉
+⚠️ This file is ignored by Git and should NOT be shared.
 
 ---
 
-## 🔧 How It Works
+### 3️⃣ Load Extension in Chrome
 
-| File | Role |
-|------|------|
-| `content.js` | Runs on your college portal page, watches for attendance-related pop-ups using DOM observation |
-| `background.js` | Receives messages from `content.js` and calls the Telegram Bot API to send you a notification |
-| `popup.html / popup.js` | A small UI accessible from the extension icon in your toolbar |
-| `config.js` | Stores your Telegram credentials securely (not tracked by git) |
+1. Open Chrome
+2. Go to:
 
----
+```
+chrome://extensions/
+```
 
-## 🛡️ Security Notes
-
-- Your `config.js` file containing the bot token and chat ID is excluded from version control via `.gitignore`
-- Never share your bot token publicly — anyone with it can send messages through your bot
-- Consider restricting your bot using Telegram's privacy settings
+3. Enable **Developer Mode**
+4. Click **Load Unpacked**
+5. Select your project folder
 
 ---
 
-## 🤝 Contributing
+## 📱 Telegram Bot Setup
 
-Contributions are welcome! Feel free to:
-- Open an [issue](https://github.com/AbhinavKG27/Attendance-Alert-Extension/issues) for bugs or feature requests
-- Submit a pull request with improvements
+1. Open Telegram → search **@BotFather**
+2. Create a bot using `/newbot`
+3. Copy the Bot Token
+4. Send a message to your bot
+5. Get your Chat ID using:
+
+```
+https://api.telegram.org/bot<TOKEN>/getUpdates
+```
 
 ---
 
-## 📄 License
+## 🎮 Usage
 
-This project is open source. Feel free to use and modify it for personal use.
+### Automatic Mode
+
+* When a popup with configured keywords appears
+* The extension automatically performs the action
+* You receive a mobile alert
+
+### Remote Mode
+
+Send a message from your phone:
+
+```
+mark
+```
+
+➡️ The extension will trigger the action remotely
+➡️ You receive confirmation
 
 ---
 
-## 👤 Author
+## 🔒 Security
 
-**Abhinav KG**  
-[GitHub @AbhinavKG27](https://github.com/AbhinavKG27)
+* Sensitive data stored in `config.js`
+* `config.js` excluded via `.gitignore`
+* No API keys exposed in public repository
+
+---
+
+## ⚙️ Customization
+
+Edit `sharedConfig.js`:
+
+```javascript
+const SHARED_CONFIG = {
+  TARGET_SITE: "example.com",
+  KEYWORDS: ["keyword1", "keyword2"]
+};
+```
+
+You can:
+
+* Change target website
+* Modify detection keywords
+* Reuse extension for different platforms
+
+---
+
+## 📈 Future Enhancements
+
+* 🔘 Enable/Disable toggle
+* 🔊 Sound alert system
+* 📊 Event logs dashboard
+* 🌐 Multi-site support
+* 🧩 Chrome Web Store publishing
+
+---
+
+## 👨‍💻 Author
+
+Developed as a real-world automation tool demonstrating:
+
+* Event-driven architecture
+* Browser automation
+* API integration
+* Remote command execution
+
+---
+
+## ⭐ Support
+
+If you found this project useful, consider giving it a ⭐ on GitHub!

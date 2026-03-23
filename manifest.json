@@ -1,25 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "Attendance Alert",
-  "version": "1.0",
-  "description": "Get instant mobile alerts for attendance popups.",
+  "name": "Kodnest Attendance Alert",
+  "version": "2.0",
+  "description": "Detects and auto-clicks Kodnest attendance popups with mobile alerts.",
 
-  "icons": {
-    "16": "icons/icon16.png",
-    "48": "icons/icon48.png",
-    "128": "icons/icon128.png"
-  },
-
-  "action": {
-    "default_icon": {
-      "16": "icons/icon16.png",
-      "48": "icons/icon48.png",
-      "128": "icons/icon128.png"
-    }
-  },
-
-  "permissions": ["notifications", "activeTab", "scripting"],
-  "host_permissions": ["Website-on-which-to-monitor"],
+  "permissions": ["notifications", "activeTab", "scripting", "tabs"],
+  "host_permissions": ["*://*.kodnest.com/*"],
 
   "background": {
     "service_worker": "background.js"
@@ -27,9 +13,25 @@
 
   "content_scripts": [
     {
-      "matches": ["Website-on-which-to-monitor"],
+      "matches": ["*://*.kodnest.com/*"],
       "js": ["content.js"],
-      "run_at": "document_idle"
+      "run_at": "document_idle",
+      "all_frames": true
     }
-  ]
+  ],
+
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
 }

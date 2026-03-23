@@ -1,4 +1,3 @@
-// background.js
 importScripts("config.js");
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -6,9 +5,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
         chrome.notifications.create({
             type: "basic",
-            iconUrl: "https://cdn-icons-png.flaticon.com/512/1827/1827392.png",
-            title: "🚨 Attendance Alert",
-            message: "Attendance popup detected! Open class NOW!",
+            iconUrl: "icons/icon128.png",
+            title: "🚨 Kodnest Attendance Alert",
+            message: request.text,
             priority: 2
         });
 

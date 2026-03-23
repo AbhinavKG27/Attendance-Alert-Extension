@@ -1,90 +1,103 @@
-console.log("🎯Attendance Modal Detector (Anti-Spam Version)");
+console.log("🎯 Kodnest Attendance Detector Running");
 
 let alertTriggered = false;
 
-// Strong keywords (case-insensitive)
+// Keywords to detect attendance popup
 const KEYWORDS = [
-    "mark your attendance",
-    "mark attendance"
+  "attendance",
+  "mark attendance",
+  "mark your attendance",
+  "click to mark",
+  "confirm attendance"
 ];
 
-// Check if modal is visible on screen
-function isVisible(element) {
-    const style = window.getComputedStyle(element);
-    return (
-        style.display !== "none" &&
-        style.visibility !== "hidden" &&
-        element.offsetHeight > 0 &&
-        element.offsetWidth > 0
-    );
+// Check if element is visible on screen
+function isVisible(el) {
+  if (!el) return false;
+
+  const style = window.getComputedStyle(el);
+  const rect = el.getBoundingClientRect();
+
+  return (
+    style.display !== "none" &&
+    style.visibility !== "hidden" &&
+    rect.width > 0 &&
+    rect.height > 0 &&
+    rect.top < window.innerHeight &&
+    rect.bottom > 0
+  );
 }
 
-// Check keyword match safely
+// Check if text contains attendance keywords
 function containsAttendance(text) {
-    if (!text) return false;
-    const lower = text.toLowerCase();
-    return KEYWORDS.some(k => lower.includes(k));
+  if (!text) return false;
+
+  const lower = text.toLowerCase();
+  return KEYWORDS.some(k => lower.includes(k));
 }
 
-// Trigger alert once
+// Send alert once
 function sendAlert(text) {
-    if (alertTriggered) return;
+  if (alertTriggered) return;
 
-    alertTriggered = true;
-    console.log("🚨 REAL ATTENDANCE POPUP DETECTED:", text);
+  alertTriggered = true;
 
-    chrome.runtime.sendMessage({
-        type: "ATTENDANCE_DETECTED",
-        text: "Attendance Popup Detected!"
-    });
+  console.log("🚨 Attendance popup detected:", text);
 
-    // Cooldown (prevents spam alerts)
-    setTimeout(() => {
-        alertTriggered = false;
-    }, 60000); // 60 sec cooldown (very important)
+  chrome.runtime.sendMessage({
+    type: "ATTENDANCE_DETECTED",
+    text: "Attendance popup detected!"
+  });
+
+  // Prevent spam alerts
+  setTimeout(() => {
+    alertTriggered = false;
+  }, 45000);
 }
 
-// Mutation observer (only for NEW visible modals)
-const observer = new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-        for (const node of mutation.addedNodes) {
-            if (!node || node.nodeType !== 1) continue;
+// Scan a node for attendance popup
+function scanNode(node) {
+  if (!node || node.nodeType !== 1) return;
 
-            try {
-                // Check if it's a modal/dialog
-                const modalCandidates = [
-                    node,
-                    ...node.querySelectorAll('[role="dialog"], .modal, .popup, .dialog')
-                ];
+  try {
+    const elements = [
+      node,
+      ...node.querySelectorAll("button, div, span")
+    ];
 
-                for (const modal of modalCandidates) {
-                    if (!isVisible(modal)) continue;
+    for (const el of elements) {
+      if (!isVisible(el)) continue;
 
-                    const text = modal.innerText || "";
-                    if (containsAttendance(text)) {
-                        sendAlert(text);
-                        return;
-                    }
+      const text = el.innerText || "";
 
-                    // Check buttons inside modal
-                    const buttons = modal.querySelectorAll("button");
-                    for (const btn of buttons) {
-                        if (containsAttendance(btn.innerText)) {
-                            sendAlert(btn.innerText);
-                            return;
-                        }
-                    }
-                }
-
-            } catch (err) {
-                console.error("Detection error:", err);
-            }
-        }
+      if (containsAttendance(text)) {
+        sendAlert(text);
+        return true;
+      }
     }
+  } catch (e) {
+    console.error("Scan error:", e);
+  }
+
+  return false;
+}
+
+// MutationObserver for dynamic popups
+const observer = new MutationObserver((mutations) => {
+  for (const mutation of mutations) {
+    for (const node of mutation.addedNodes) {
+      if (scanNode(node)) return;
+    }
+  }
 });
 
-// Observe DOM changes (best for popup modals)
+// Start observing DOM
 observer.observe(document.body, {
-    childList: true,
-    subtree: true
+  childList: true,
+  subtree: true
 });
+
+// Initial scan (in case popup already exists)
+setTimeout(() => {
+  scanNode(document.body);
+}, 2000);

@@ -1,80 +1,79 @@
-importScripts("config.js");
+importScripts("config.js", "sharedConfig.js");
 
 let lastUpdateId = 0;
 
-// Listen for detection alerts from content.js
+// Handle alerts from content.js
 chrome.runtime.onMessage.addListener((request) => {
-    if (request.type === "ATTENDANCE_DETECTED") {
+  if (request.type === "ATTENDANCE_DETECTED") {
 
-        // Desktop notification
-        chrome.notifications.create({
-            type: "basic",
-            iconUrl: "icons/icon128.png",
-            title: "🚨 Attendance Alert",
-            message: request.text,
-            priority: 2
-        });
+    chrome.notifications.create({
+      type: "basic",
+      iconUrl: "icons/icon128.png",
+      title: "🚨 Attendance Alert",
+      message: request.text,
+      priority: 2
+    });
 
-        // Telegram alert
-        fetch(`https://api.telegram.org/bot${CONFIG.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                chat_id: CONFIG.CHAT_ID,
-                text: "🚨 Attendance popup detected!"
-            })
-        });
-    }
+    fetch(`https://api.telegram.org/bot${CONFIG.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        chat_id: CONFIG.CHAT_ID,
+        text: "🚨 Attendance detected & handled!"
+      })
+    });
+  }
 });
 
-// 🔁 Poll Telegram every 5 sec for remote commands
+// 🔁 Telegram polling for remote commands
 setInterval(async () => {
-    try {
-        const res = await fetch(
-            `https://api.telegram.org/bot${CONFIG.TELEGRAM_BOT_TOKEN}/getUpdates`
-        );
-        const data = await res.json();
+  try {
+    const res = await fetch(
+      `https://api.telegram.org/bot${CONFIG.TELEGRAM_BOT_TOKEN}/getUpdates`
+    );
+    const data = await res.json();
 
-        if (!data.result) return;
+    if (!data.result) return;
 
-        for (const update of data.result) {
-            if (update.update_id <= lastUpdateId) continue;
+    for (const update of data.result) {
+      if (update.update_id <= lastUpdateId) continue;
 
-            lastUpdateId = update.update_id;
+      lastUpdateId = update.update_id;
 
-            const message = update.message?.text?.toLowerCase();
-            if (!message) continue;
+      const msg = update.message?.text?.toLowerCase();
+      if (!msg) continue;
 
-            console.log("📩 Telegram command:", message);
+      console.log("📩 Command:", msg);
 
-            if (message.includes("mark")) {
-                triggerAttendanceClick();
-            }
-        }
-    } catch (err) {
-        console.error("Polling error:", err);
+      if (msg.includes("mark")) {
+        triggerAttendanceClick();
+      }
     }
+
+  } catch (err) {
+    console.error("Polling error:", err);
+  }
 }, 5000);
 
-// Send command to content.js
+// Send click command to tab
 function triggerAttendanceClick() {
-    chrome.tabs.query({}, (tabs) => {
-        for (const tab of tabs) {
-            if (tab.url && tab.url.includes("kodnest")) {
-                chrome.tabs.sendMessage(tab.id, {
-                    type: "FORCE_CLICK_ATTENDANCE"
-                });
-            }
-        }
-    });
+  chrome.tabs.query({}, (tabs) => {
+    for (const tab of tabs) {
+      if (tab.url && tab.url.includes(SHARED_CONFIG.TARGET_SITE)) {
+        chrome.tabs.sendMessage(tab.id, {
+          type: "FORCE_CLICK_ATTENDANCE"
+        });
+      }
+    }
+  });
 
-    // Confirmation message
-    fetch(`https://api.telegram.org/bot${CONFIG.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            chat_id: CONFIG.CHAT_ID,
-            text: "✅ Attendance command executed"
-        })
-    });
+  // confirmation
+  fetch(`https://api.telegram.org/bot${CONFIG.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      chat_id: CONFIG.CHAT_ID,
+      text: "✅ Attendance command executed"
+    })
+  });
 }

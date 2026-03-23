@@ -1,109 +1,79 @@
-console.log("🎯 Kodnest Detector Running");
+importScripts("config.js", "sharedConfig.js");
 
-let alertTriggered = false;
+let lastUpdateId = 0;
 
-const KEYWORDS = [
-  "attendance",
-  "mark attendance",
-  "mark your attendance",
-  "click to mark",
-  "confirm attendance"
-];
+// Handle alerts from content.js
+chrome.runtime.onMessage.addListener((request) => {
+  if (request.type === "ATTENDANCE_DETECTED") {
 
-function isVisible(el) {
-  if (!el) return false;
-  const rect = el.getBoundingClientRect();
-  const style = window.getComputedStyle(el);
+    chrome.notifications.create({
+      type: "basic",
+      iconUrl: "icons/icon128.png",
+      title: "🚨 Attendance Alert",
+      message: request.text,
+      priority: 2
+    });
 
-  return (
-    style.display !== "none" &&
-    style.visibility !== "hidden" &&
-    rect.width > 0 &&
-    rect.height > 0
-  );
-}
-
-function containsAttendance(text) {
-  if (!text) return false;
-  const lower = text.toLowerCase();
-  return KEYWORDS.some(k => lower.includes(k));
-}
-
-// Auto-click attendance
-function autoClickAttendance(root) {
-  const elements = root.querySelectorAll("button, div, span, a");
-
-  for (const el of elements) {
-    if (!isVisible(el)) continue;
-
-    const text = el.innerText || "";
-    if (containsAttendance(text)) {
-      console.log("🤖 Auto-click:", text);
-      el.click();
-      return true;
-    }
+    fetch(`https://api.telegram.org/bot${CONFIG.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        chat_id: CONFIG.CHAT_ID,
+        text: "🚨 Attendance detected & handled!"
+      })
+    });
   }
-  return false;
-}
+});
 
-function sendAlert(text) {
-  if (alertTriggered) return;
+// 🔁 Telegram polling for remote commands
+setInterval(async () => {
+  try {
+    const res = await fetch(
+      `https://api.telegram.org/bot${CONFIG.TELEGRAM_BOT_TOKEN}/getUpdates`
+    );
+    const data = await res.json();
 
-  alertTriggered = true;
+    if (!data.result) return;
 
-  chrome.runtime.sendMessage({
-    type: "ATTENDANCE_DETECTED",
-    text: "Attendance detected & clicked!"
+    for (const update of data.result) {
+      if (update.update_id <= lastUpdateId) continue;
+
+      lastUpdateId = update.update_id;
+
+      const msg = update.message?.text?.toLowerCase();
+      if (!msg) continue;
+
+      console.log("📩 Command:", msg);
+
+      if (msg.includes("mark")) {
+        triggerAttendanceClick();
+      }
+    }
+
+  } catch (err) {
+    console.error("Polling error:", err);
+  }
+}, 5000);
+
+// Send click command to tab
+function triggerAttendanceClick() {
+  chrome.tabs.query({}, (tabs) => {
+    for (const tab of tabs) {
+      if (tab.url && tab.url.includes(SHARED_CONFIG.TARGET_SITE)) {
+        chrome.tabs.sendMessage(tab.id, {
+          type: "FORCE_CLICK_ATTENDANCE"
+        });
+      }
+    }
   });
 
-  setTimeout(() => {
-    alertTriggered = false;
-  }, 45000);
+  // confirmation
+  fetch(`https://api.telegram.org/bot${CONFIG.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      chat_id: CONFIG.CHAT_ID,
+      text: "✅ Attendance command executed"
+    })
+  });
 }
-
-function scanNode(node) {
-  if (!node || node.nodeType !== 1) return;
-
-  const elements = [node, ...node.querySelectorAll("div, button, span")];
-
-  for (const el of elements) {
-    if (!isVisible(el)) continue;
-
-    const text = el.innerText || "";
-
-    if (containsAttendance(text)) {
-      if (autoClickAttendance(document.body)) {
-        sendAlert(text);
-      }
-      return true;
-    }
-  }
-  return false;
-}
-
-// Detect popup
-const observer = new MutationObserver((mutations) => {
-  for (const mutation of mutations) {
-    for (const node of mutation.addedNodes) {
-      if (scanNode(node)) return;
-    }
-  }
-});
-
-observer.observe(document.body, {
-  childList: true,
-  subtree: true
-});
-
-// Initial scan
-setTimeout(() => {
-  scanNode(document.body);
-}, 2000);
-
-// 📱 Remote command listener
-chrome.runtime.onMessage.addListener((request) => {
-  if (request.type === "FORCE_CLICK_ATTENDANCE") {
-    console.log("📱 Remote trigger received");
-    autoClickAttendance(document.body);
-  }
-});

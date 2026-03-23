@@ -1,8 +1,7 @@
-console.log("🎯 Kodnest Attendance Detector Running");
+console.log("🎯 Kodnest Detector Running");
 
 let alertTriggered = false;
 
-// Keywords to detect attendance popup
 const KEYWORDS = [
   "attendance",
   "mark attendance",
@@ -11,78 +10,78 @@ const KEYWORDS = [
   "confirm attendance"
 ];
 
-// Check if element is visible on screen
 function isVisible(el) {
   if (!el) return false;
-
-  const style = window.getComputedStyle(el);
   const rect = el.getBoundingClientRect();
+  const style = window.getComputedStyle(el);
 
   return (
     style.display !== "none" &&
     style.visibility !== "hidden" &&
     rect.width > 0 &&
-    rect.height > 0 &&
-    rect.top < window.innerHeight &&
-    rect.bottom > 0
+    rect.height > 0
   );
 }
 
-// Check if text contains attendance keywords
 function containsAttendance(text) {
   if (!text) return false;
-
   const lower = text.toLowerCase();
   return KEYWORDS.some(k => lower.includes(k));
 }
 
-// Send alert once
+// Auto-click attendance
+function autoClickAttendance(root) {
+  const elements = root.querySelectorAll("button, div, span, a");
+
+  for (const el of elements) {
+    if (!isVisible(el)) continue;
+
+    const text = el.innerText || "";
+    if (containsAttendance(text)) {
+      console.log("🤖 Auto-click:", text);
+      el.click();
+      return true;
+    }
+  }
+  return false;
+}
+
 function sendAlert(text) {
   if (alertTriggered) return;
 
   alertTriggered = true;
 
-  console.log("🚨 Attendance popup detected:", text);
-
   chrome.runtime.sendMessage({
     type: "ATTENDANCE_DETECTED",
-    text: "Attendance popup detected!"
+    text: "Attendance detected & clicked!"
   });
 
-  // Prevent spam alerts
   setTimeout(() => {
     alertTriggered = false;
   }, 45000);
 }
 
-// Scan a node for attendance popup
 function scanNode(node) {
   if (!node || node.nodeType !== 1) return;
 
-  try {
-    const elements = [
-      node,
-      ...node.querySelectorAll("button, div, span")
-    ];
+  const elements = [node, ...node.querySelectorAll("div, button, span")];
 
-    for (const el of elements) {
-      if (!isVisible(el)) continue;
+  for (const el of elements) {
+    if (!isVisible(el)) continue;
 
-      const text = el.innerText || "";
+    const text = el.innerText || "";
 
-      if (containsAttendance(text)) {
+    if (containsAttendance(text)) {
+      if (autoClickAttendance(document.body)) {
         sendAlert(text);
-        return true;
       }
+      return true;
     }
-  } catch (e) {
-    console.error("Scan error:", e);
   }
-
   return false;
 }
 
-// MutationObserver for dynamic popups
+// Detect popup
 const observer = new MutationObserver((mutations) => {
   for (const mutation of mutations) {
     for (const node of mutation.addedNodes) {
@@ -91,13 +90,20 @@ const observer = new MutationObserver((mutations) => {
   }
 });
 
-// Start observing DOM
 observer.observe(document.body, {
   childList: true,
   subtree: true
 });
 
-// Initial scan (in case popup already exists)
+// Initial scan
 setTimeout(() => {
   scanNode(document.body);
 }, 2000);
+
+// 📱 Remote command listener
+chrome.runtime.onMessage.addListener((request) => {
+  if (request.type === "FORCE_CLICK_ATTENDANCE") {
+    console.log("📱 Remote trigger received");
+    autoClickAttendance(document.body);
+  }
+});

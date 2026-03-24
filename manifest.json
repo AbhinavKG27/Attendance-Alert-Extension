@@ -1,25 +1,25 @@
 {
   "manifest_version": 3,
-  "name": "Attendance Automation Bot",
-  "version": "3.0",
-  "description": "Auto-detect and mark attendance with mobile control.",
-
-  "permissions": ["notifications", "activeTab", "scripting", "tabs"],
-  "host_permissions": ["*://*/*"],
-
+  "name": "Attendance Monitor",
+  "version": "4.1.0",
+  "description": "Detect attendance popup and notify via browser + Telegram with manual approval flow.",
+  "permissions": ["notifications", "storage", "tabs", "alarms"],
+  "host_permissions": [
+    "*://*.example-website.com/*",
+    "http://localhost:8787/*",
+    "https://api.telegram.org/*"
+  ],
   "background": {
     "service_worker": "background.js"
   },
-
   "content_scripts": [
     {
-      "matches": ["*://*/*"],
+      "matches": ["*://*.example-website.com/*"],
       "js": ["sharedConfig.js", "content.js"],
       "run_at": "document_idle",
-      "all_frames": true
+      "all_frames": false
     }
   ],
-
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -28,7 +28,6 @@
       "128": "icons/icon128.png"
     }
   },
-
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",

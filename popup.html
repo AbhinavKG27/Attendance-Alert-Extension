@@ -1,23 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Attendance Alert</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Attendance Monitor</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
     <div class="container">
-        <h2>🎯 Attendance Monitor</h2>
-        <p class="status" id="status">Status: Active</p>
-        
-        <button id="testBtn">🔔 Test Notification</button>
-        
-        <p class="footer">
-            Monitoring  popups in real-time
-        </p>
+      <h2>🎯 Attendance Monitor</h2>
+
+      <label class="toggle-row" for="monitorToggle">
+        <span>Monitoring</span>
+        <input id="monitorToggle" type="checkbox" />
+      </label>
+
+      <label class="input-row" for="approvalEndpoint">
+        <span>Approval API Base URL</span>
+        <input id="approvalEndpoint" type="url" placeholder="http://localhost:8787" />
+      </label>
+
+      <label class="input-row" for="approvalApiKey">
+        <span>API Key (optional)</span>
+        <input id="approvalApiKey" type="password" placeholder="shared secret" />
+      </label>
+
+      <button id="saveBtn">💾 Save Settings</button>
+      <button id="approveBtn" class="secondary">✅ Approve Latest Popup</button>
+      <button id="telegramBtn" class="secondary">📲 Test Telegram</button>
+      <button id="testBtn" class="secondary">🔔 Test Browser Notification</button>
+
+      <p class="status" id="status">Loading…</p>
+      <p class="hint" id="telegramStatus">Telegram status: checking…</p>
+      <p class="hint" id="lastDetection">No popup detected yet.</p>
     </div>
 
+    <script src="sharedConfig.js"></script>
     <script src="popup.js"></script>
-</body>
+  </body>
 </html>
